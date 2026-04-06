@@ -7,7 +7,7 @@
 
 ## Descrição do Projeto
 
-A **VendaMais Distribuidora Ltda.** é uma empresa de médio porte com operações em quatro estados do Sul e Sudeste do Brasil, processando cerca de 3.500 pedidos/mês com 18 representantes comerciais. Desde 2019, opera um ERP proprietário que centraliza todas as transações, porém sem capacidade analítica adequada — relatórios levam até 2 dias úteis para serem compilados manualmente e a diretoria toma decisões com dados de até 30 dias de defasagem.
+A **VendaMais Distribuidora Ltda.** é uma empresa de médio porte com operações em quatro estados do Sul e Sudeste do Brasil, processando cerca de 3.500 pedidos/mês com 18 representantes comerciais. Desde 2019, opera um ERP proprietário que centraliza todas as transações, porém sem capacidade analítica adequada. Relatórios levam até 2 dias úteis para serem compilados manualmente e a diretoria toma decisões com dados de até 30 dias de defasagem.
 
 Este repositório documenta a **arquitetura da Plataforma de Inteligência Operacional** que resolve esse problema, automatizando o pipeline de dados do ERP até o Power BI via Azure Cloud:
 
