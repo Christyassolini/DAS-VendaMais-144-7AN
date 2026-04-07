@@ -16,7 +16,7 @@ O objetivo do Nível 1 é delimitar claramente **o que está dentro e fora do si
 ## Diagrama
 
 <p align="center">
-  <img src="../images/01-Context.jpeg" alt="Diagrama Context" width="800"/>
+  <img src="/images/01-Context.jpeg" alt="Diagrama Context" width="800"/>
 </p>
 
 ---
