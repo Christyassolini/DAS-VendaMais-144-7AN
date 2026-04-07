@@ -16,5 +16,5 @@ Este nível responde à pergunta: **"Como o sistema é construído e quais peça
 ## Diagrama
 
 <p align="center">
-  <img src="../images/02-Container.jpg" alt="Diagrama Container" width="1000"/>
+  <img src="/images/02-Container.jpg" alt="Diagrama Container" width="1000"/>
 </p>
