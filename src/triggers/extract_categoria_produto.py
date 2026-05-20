@@ -10,10 +10,10 @@ def extract_categoria_produto(timer: func.TimerRequest) -> None:
 
     sql_server = os.getenv("SQL_SERVER_SOURCE")
     database = os.getenv("SQL_DATABASE_SOURCE")
-    user = os.getenv("SQL_USER_SOURCE")
-    password = os.getenv("SQL_PASSWORD_SOURCE")
+    sql_user = os.getenv("SQL_USER_SOURCE")
+    sql_pass = os.getenv("SQL_PASSWORD_SOURCE")
 
-    logging.info(f"sql_server:{sql_server}, database:{database}, user:{user}, password:{password}...")
+    logging.info(f"sql_server:{sql_server}, database:{database}, user:{sql_user}, password:{sql_pass}...")
 
     # Configura a string de conexão para o banco de dados SQL Server
     conn_str = (
@@ -27,7 +27,6 @@ def extract_categoria_produto(timer: func.TimerRequest) -> None:
         "Connection Timeout=30;"
     )
 
-    
     try:
         # Estabelece a conexão com o banco de dados usando pyodbc
         with pyodbc.connect(conn_str) as conn:
