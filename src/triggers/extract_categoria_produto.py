@@ -33,8 +33,8 @@ def extract_categoria_produto(timer: func.TimerRequest) -> None:
             # Cria um cursor para executar a consulta   
             cursor = conn.cursor()
             
-            query = "select * from erp.pedido"
-
+            query = "select top 5 * from erp.categoria_produto"
+ 
             # Executa a consulta SQL
             cursor.execute(query)
 
@@ -44,5 +44,5 @@ def extract_categoria_produto(timer: func.TimerRequest) -> None:
             logging.info(rows)           
 
     except Exception as e:
-        logging.error(f"Erro ao ler erp.pedido: {str(e)}")
+        logging.error(f"Erro ao ler erp.categoria_produto: {str(e)}")
         raise
