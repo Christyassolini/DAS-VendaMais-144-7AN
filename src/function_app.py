@@ -5,6 +5,7 @@ app = func.FunctionApp()
 
 # Importa triggers para registrar as functions no app
 from triggers.extract_cliente import app as extract_cliente
+from triggers.extract_cliente import app as extract_cliente2
 from triggers.extract_pedido import app as extract_pedido
 from triggers.extract_entrega import app as extract_entrega
 from triggers.extract_produto import app as extract_produto
@@ -18,6 +19,7 @@ from triggers.extract_estoque_saldo import app as extract_estoque_saldo
 from triggers.extract_titulo_receber import app as extract_titulo_receber
 
 app.register_functions(extract_cliente)
+app.register_functions(extract_cliente2)
 app.register_functions(extract_pedido)
 app.register_functions(extract_entrega)
 app.register_functions(extract_produto)
