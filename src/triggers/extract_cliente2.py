@@ -7,7 +7,7 @@ import datetime
 app = func.Blueprint()
 
 @app.timer_trigger(schedule="0 0 6 * * *", arg_name="timer", run_on_startup=False)
-def extract_cliente(timer: func.TimerRequest) -> None:
+def extract_cliente2(timer: func.TimerRequest) -> None:
 
     sql_server = os.getenv("SQL_SERVER_SOURCE")
     sql_database = os.getenv("SQL_DATABASE_SOURCE")
@@ -34,7 +34,7 @@ def extract_cliente(timer: func.TimerRequest) -> None:
 
         with engine.connect() as conn:
             logging.info(f"Inicio da conexão: {datetime.now()}")
-            query = text("SELECT TOP 5 * FROM erp.cliente")
+            query = text("SELECT TOP 5 * FROM erp.cliente2")
 
             result = conn.execute(query)
 
@@ -44,5 +44,5 @@ def extract_cliente(timer: func.TimerRequest) -> None:
             logging.info(f"Fim da conexão: {datetime.now()}")
 
     except Exception as e:
-        logging.error(f"Erro ao ler erp.cliente: {str(e)}")
+        logging.error(f"Erro ao ler erp.cliente2: {str(e)}")
         raise
