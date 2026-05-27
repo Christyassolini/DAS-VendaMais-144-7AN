@@ -3,6 +3,7 @@ import logging
 import os
 import urllib
 import datetime
+from sqlalchemy import create_engine, text
 
 app = func.Blueprint()
 
