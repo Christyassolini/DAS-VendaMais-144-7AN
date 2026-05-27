@@ -2,6 +2,7 @@ import azure.functions as func
 import logging
 import os
 import urllib
+import datetime
 
 app = func.Blueprint()
 
@@ -32,6 +33,7 @@ def extract_cliente(timer: func.TimerRequest) -> None:
         engine = create_engine(f"mssql+pyodbc:///?odbc_connect={params}")
 
         with engine.connect() as conn:
+            logging.info(f"Inicio da conexão: {datetime.now()}")
             query = text("SELECT TOP 5 * FROM erp.cliente")
 
             result = conn.execute(query)
@@ -39,6 +41,7 @@ def extract_cliente(timer: func.TimerRequest) -> None:
             rows = result.fetchall()
 
             logging.info(rows)
+            logging.info(f"Fim da conexão: {datetime.now()}")
 
     except Exception as e:
         logging.error(f"Erro ao ler erp.cliente: {str(e)}")
