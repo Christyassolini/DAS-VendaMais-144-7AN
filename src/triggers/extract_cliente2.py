@@ -35,7 +35,7 @@ def extract_cliente2(timer: func.TimerRequest) -> None:
 
         with engine.connect() as conn:
             logging.info(f"Inicio da conexão: {datetime.datetime.now()}")
-            query = text("SELECT TOP 5 * FROM erp.cliente2")
+            query = text("SELECT TOP 5 * FROM erp.cliente")
 
             result = conn.execute(query)
 
@@ -45,5 +45,5 @@ def extract_cliente2(timer: func.TimerRequest) -> None:
             logging.info(f"Fim da conexão: {datetime.datetime.now()}")
 
     except Exception as e:
-        logging.error(f"Erro ao ler erp.cliente2: {str(e)}")
+        logging.error(f"Erro ao ler erp.cliente: {str(e)}")
         raise
