@@ -3,6 +3,7 @@ import azure.functions as func
 import logging
 import os
 import pyodbc
+import datetime
 #from orchestrators.etl_orchestrator import ETLOrchestrator
 
 app = func.Blueprint()
@@ -33,6 +34,7 @@ def extract_cliente(timer: func.TimerRequest) -> None:
         # Estabelece a conexão com o banco de dados usando pyodbc
         with pyodbc.connect(conn_str) as conn:
             # Cria um cursor para executar a consulta   
+            logging.info(f"Inicio da conexão: {datetime.datetime.now()}")
             cursor = conn.cursor()
             
             query = "select top 5 * from erp.cliente"
@@ -43,7 +45,8 @@ def extract_cliente(timer: func.TimerRequest) -> None:
             # Busca todos os resultados da consulta
             rows = cursor.fetchall()
 
-            logging.info(rows)           
+            logging.info(rows)  
+            logging.info(f"Fim da conexão: {datetime.datetime.now()}")
 
     except Exception as e:
         logging.error(f"Erro ao ler erp.cliente: {str(e)}")
