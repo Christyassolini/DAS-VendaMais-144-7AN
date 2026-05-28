@@ -34,7 +34,7 @@ def extract_cliente2(timer: func.TimerRequest) -> None:
         engine = create_engine(f"mssql+pyodbc:///?odbc_connect={params}")
 
         with engine.connect() as conn:
-            logging.info(f"Inicio da conexão: {datetime.now()}")
+            logging.info(f"Inicio da conexão: {datetime.datetime.now()}")
             query = text("SELECT TOP 5 * FROM erp.cliente2")
 
             result = conn.execute(query)
@@ -42,7 +42,7 @@ def extract_cliente2(timer: func.TimerRequest) -> None:
             rows = result.fetchall()
 
             logging.info(rows)
-            logging.info(f"Fim da conexão: {datetime.now()}")
+            logging.info(f"Fim da conexão: {datetime.datetime.now()}")
 
     except Exception as e:
         logging.error(f"Erro ao ler erp.cliente2: {str(e)}")
