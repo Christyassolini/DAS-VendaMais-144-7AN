@@ -1,16 +1,15 @@
-
 import azure.functions as func
 import logging
 import os
-import pyodbc
+import urllib
 import datetime
-#from orchestrators.etl_orchestrator import ETLOrchestrator
+from sqlalchemy import create_engine, text
 
 app = func.Blueprint()
 
 @app.timer_trigger(schedule="0 0 6 * * *", arg_name="timer", run_on_startup=False)
-def extract_entrega(timer: func.TimerRequest) -> None:
- 
+def extract_entrega2(timer: func.TimerRequest) -> None:
+
     sql_server = os.getenv("SQL_SERVER_SOURCE")
     sql_database = os.getenv("SQL_DATABASE_SOURCE")
     sql_user = os.getenv("SQL_USER_SOURCE")
@@ -18,7 +17,6 @@ def extract_entrega(timer: func.TimerRequest) -> None:
 
     logging.info(f"sql_server:{sql_server}, database:{sql_database}, user:{sql_user}, password:{sql_pass}...")
 
-    # Configura a string de conexão para o banco de dados SQL Server
     conn_str = (
         "DRIVER={ODBC Driver 18 for SQL Server};"
         f"SERVER={sql_server};"
@@ -31,21 +29,19 @@ def extract_entrega(timer: func.TimerRequest) -> None:
     )
 
     try:
-        # Estabelece a conexão com o banco de dados usando pyodbc
-        with pyodbc.connect(conn_str) as conn:
-            # Cria um cursor para executar a consulta   
+
+        params = urllib.parse.quote_plus(conn_str)
+        engine = create_engine(f"mssql+pyodbc:///?odbc_connect={params}")
+
+        with engine.connect() as conn:
             logging.info(f"Inicio da conexão: {datetime.datetime.now()}")
-            cursor = conn.cursor()
-            
-            query = "select * from erp.entrega"
- 
-            # Executa a consulta SQL
-            cursor.execute(query)
+            query = text("SELECT  * FROM erp.entrega")
 
-            # Busca todos os resultados da consulta
-            rows = cursor.fetchall()
+            result = conn.execute(query)
 
-            logging.info(rows)  
+            rows = result.fetchall()
+
+            logging.info(rows)
             logging.info(f"Fim da conexão: {datetime.datetime.now()}")
 
     except Exception as e:

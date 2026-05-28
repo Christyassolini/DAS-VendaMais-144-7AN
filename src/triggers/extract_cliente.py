@@ -37,7 +37,7 @@ def extract_cliente(timer: func.TimerRequest) -> None:
             logging.info(f"Inicio da conexão: {datetime.datetime.now()}")
             cursor = conn.cursor()
             
-            query = "select top 5 * from erp.cliente"
+            query = "select * from erp.cliente"
  
             # Executa a consulta SQL
             cursor.execute(query)
