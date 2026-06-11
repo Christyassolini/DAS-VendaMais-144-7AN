@@ -27,18 +27,20 @@ def extract_representante(timer: func.TimerRequest) -> None:
 
         dest_cursor = dest.cursor()
         for row in rows:
+            dest_cursor.execute("SET IDENTITY_INSERT dbo.representante ON")
             dest_cursor.execute("""
                 MERGE dbo.representante AS t
-                USING (VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)) AS s (cd_representante, nm_representante, ds_email, ds_telefone, id_regiao, fl_ativo, dt_atualizacao, nm_sistema_origem, cd_registro_origem)
-                ON t.cd_representante = s.cd_representante
+                USING (VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)) AS s (id_representante, cd_representante, nm_representante, ds_email, ds_telefone, id_regiao, fl_ativo, dt_atualizacao, nm_sistema_origem)
+                ON t.id_representante = s.id_representante
                 WHEN MATCHED THEN UPDATE SET
-                    t.nm_representante = s.nm_representante, t.ds_email = s.ds_email,
-                    t.ds_telefone = s.ds_telefone, t.id_regiao = s.id_regiao,
-                    t.fl_ativo = s.fl_ativo, t.dt_atualizacao = s.dt_atualizacao,
-                    t.nm_sistema_origem = s.nm_sistema_origem, t.cd_registro_origem = s.cd_registro_origem
-                WHEN NOT MATCHED THEN INSERT (cd_representante, nm_representante, ds_email, ds_telefone, id_regiao, fl_ativo, dt_atualizacao, nm_sistema_origem, cd_registro_origem)
-                VALUES (s.cd_representante, s.nm_representante, s.ds_email, s.ds_telefone, s.id_regiao, s.fl_ativo, s.dt_atualizacao, s.nm_sistema_origem, s.cd_registro_origem);
-            """, row.cd_representante, row.nm_representante, row.ds_email, row.ds_telefone, row.id_regiao, row.fl_ativo, row.dt_atualizacao, row.nm_sistema_origem, row.cd_registro_origem)
+                    t.cd_representante = s.cd_representante, t.nm_representante = s.nm_representante,
+                    t.ds_email = s.ds_email, t.ds_telefone = s.ds_telefone,
+                    t.id_regiao = s.id_regiao, t.fl_ativo = s.fl_ativo,
+                    t.dt_atualizacao = s.dt_atualizacao, t.nm_sistema_origem = s.nm_sistema_origem
+                WHEN NOT MATCHED THEN INSERT (id_representante, cd_representante, nm_representante, ds_email, ds_telefone, id_regiao, fl_ativo, dt_atualizacao, nm_sistema_origem)
+                VALUES (s.id_representante, s.cd_representante, s.nm_representante, s.ds_email, s.ds_telefone, s.id_regiao, s.fl_ativo, s.dt_atualizacao, s.nm_sistema_origem);
+            """, row.id_representante, row.cd_representante, row.nm_representante, row.ds_email, row.ds_telefone, row.id_regiao, row.fl_ativo, row.dt_atualizacao, row.nm_sistema_origem)
+            dest_cursor.execute("SET IDENTITY_INSERT dbo.representante OFF")
         dest.commit()
         logging.info("representante: carga concluída")
 
