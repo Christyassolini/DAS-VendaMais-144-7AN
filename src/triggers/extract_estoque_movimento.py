@@ -1,49 +1,48 @@
-import os
-
 import azure.functions as func
 import logging
-#from orchestrators.etl_orchestrator import ETLOrchestrator
+import os
+import pyodbc
 
 app = func.Blueprint()
 
-@app.timer_trigger(schedule="0 0 6 * * *", arg_name="timer", run_on_startup=False)
+@app.timer_trigger(schedule="0 15 6 * * *", arg_name="timer", run_on_startup=False)
 def extract_estoque_movimento(timer: func.TimerRequest) -> None:
-    
-    sql_server = os.getenv("SQL_SERVER_SOURCE")
-    sql_database = os.getenv("SQL_DATABASE_SOURCE")
-    sql_user = os.getenv("SQL_USER_SOURCE")
-    sql_pass = os.getenv("SQL_PASSWORD_SOURCE")
 
-    logging.info(f"sql_server:{sql_server}, database:{sql_database}, user:{sql_user}, password:{sql_pass}...")
-
-    # Configura a string de conexão para o banco de dados SQL Server
-    conn_str = (
+    src = pyodbc.connect(
         "DRIVER={ODBC Driver 18 for SQL Server};"
-        f"SERVER={sql_server};"
-        f"DATABASE={sql_database};"
-        f"UID={sql_user};"
-        f"PWD={sql_pass};"
-        "Encrypt=yes;"
-        "TrustServerCertificate=no;"
-        "Connection Timeout=30;"
+        f"SERVER={os.getenv('SQL_SERVER_SOURCE')};"
+        f"DATABASE={os.getenv('SQL_DATABASE_SOURCE')};"
+        f"UID={os.getenv('SQL_USER_SOURCE')};"
+        f"PWD={os.getenv('SQL_PASSWORD_SOURCE')};"
+        "Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;"
+    )
+    dest = pyodbc.connect(
+        "DRIVER={ODBC Driver 18 for SQL Server};"
+        f"SERVER={os.getenv('SQL_SERVER_DEST')};"
+        f"DATABASE={os.getenv('SQL_DATABASE_DEST')};"
+        f"UID={os.getenv('SQL_USER_DEST')};"
+        f"PWD={os.getenv('SQL_PASSWORD_DEST')};"
+        "Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;"
     )
 
     try:
-        # Estabelece a conexão com o banco de dados usando pyodbc
-        with pyodbc.connect(conn_str) as conn:
-            # Cria um cursor para executar a consulta   
-            cursor = conn.cursor()
-            
-            query = "select top 5 * from erp.estoque_movimento"
- 
-            # Executa a consulta SQL
-            cursor.execute(query)
+        rows = src.cursor().execute("SELECT * FROM erp.estoque_movimentacao").fetchall()
+        logging.info(f"estoque_movimentacao: {len(rows)} registros lidos")
 
-            # Busca todos os resultados da consulta
-            rows = cursor.fetchall()
-
-            logging.info(rows)           
+        dest_cursor = dest.cursor()
+        for row in rows:
+            dest_cursor.execute("""
+                MERGE dbo.estoque_movimentacao AS t
+                USING (VALUES (?, ?, ?, ?, ?)) AS s (id_produto, dt_movimentacao, ds_tipo_movimentacao, qt_movimentacao, nr_documento_origem)
+                ON t.id_produto = s.id_produto AND t.dt_movimentacao = s.dt_movimentacao AND t.nr_documento_origem = s.nr_documento_origem
+                WHEN NOT MATCHED THEN INSERT (id_produto, dt_movimentacao, ds_tipo_movimentacao, qt_movimentacao, nr_documento_origem) VALUES (s.id_produto, s.dt_movimentacao, s.ds_tipo_movimentacao, s.qt_movimentacao, s.nr_documento_origem);
+            """, row.id_produto, row.dt_movimentacao, row.ds_tipo_movimentacao, row.qt_movimentacao, row.nr_documento_origem)
+        dest.commit()
+        logging.info("estoque_movimentacao: carga concluída")
 
     except Exception as e:
-        logging.error(f"Erro ao ler erp.estoque_movimento: {str(e)}")
+        logging.error(f"Erro em estoque_movimentacao: {e}")
         raise
+    finally:
+        src.close()
+        dest.close()

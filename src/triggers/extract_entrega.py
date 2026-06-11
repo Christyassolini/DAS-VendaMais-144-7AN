@@ -1,53 +1,49 @@
-
 import azure.functions as func
 import logging
 import os
 import pyodbc
-import datetime
-#from orchestrators.etl_orchestrator import ETLOrchestrator
 
 app = func.Blueprint()
 
-@app.timer_trigger(schedule="0 0 6 * * *", arg_name="timer", run_on_startup=False)
+@app.timer_trigger(schedule="0 15 6 * * *", arg_name="timer", run_on_startup=False)
 def extract_entrega(timer: func.TimerRequest) -> None:
- 
-    sql_server = os.getenv("SQL_SERVER_SOURCE")
-    sql_database = os.getenv("SQL_DATABASE_SOURCE")
-    sql_user = os.getenv("SQL_USER_SOURCE")
-    sql_pass = os.getenv("SQL_PASSWORD_SOURCE")
 
-    logging.info(f"sql_server:{sql_server}, database:{sql_database}, user:{sql_user}, password:{sql_pass}...")
-
-    # Configura a string de conexão para o banco de dados SQL Server
-    conn_str = (
+    src = pyodbc.connect(
         "DRIVER={ODBC Driver 18 for SQL Server};"
-        f"SERVER={sql_server};"
-        f"DATABASE={sql_database};"
-        f"UID={sql_user};"
-        f"PWD={sql_pass};"
-        "Encrypt=yes;"
-        "TrustServerCertificate=no;"
-        "Connection Timeout=30;"
+        f"SERVER={os.getenv('SQL_SERVER_SOURCE')};"
+        f"DATABASE={os.getenv('SQL_DATABASE_SOURCE')};"
+        f"UID={os.getenv('SQL_USER_SOURCE')};"
+        f"PWD={os.getenv('SQL_PASSWORD_SOURCE')};"
+        "Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;"
+    )
+    dest = pyodbc.connect(
+        "DRIVER={ODBC Driver 18 for SQL Server};"
+        f"SERVER={os.getenv('SQL_SERVER_DEST')};"
+        f"DATABASE={os.getenv('SQL_DATABASE_DEST')};"
+        f"UID={os.getenv('SQL_USER_DEST')};"
+        f"PWD={os.getenv('SQL_PASSWORD_DEST')};"
+        "Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;"
     )
 
     try:
-        # Estabelece a conexão com o banco de dados usando pyodbc
-        with pyodbc.connect(conn_str) as conn:
-            # Cria um cursor para executar a consulta   
-            logging.info(f"Inicio da conexão: {datetime.datetime.now()}")
-            cursor = conn.cursor()
-            
-            query = "select * from erp.entrega"
- 
-            # Executa a consulta SQL
-            cursor.execute(query)
+        rows = src.cursor().execute("SELECT * FROM erp.entrega").fetchall()
+        logging.info(f"entrega: {len(rows)} registros lidos")
 
-            # Busca todos os resultados da consulta
-            rows = cursor.fetchall()
-
-            logging.info(rows)  
-            logging.info(f"Fim da conexão: {datetime.datetime.now()}")
+        dest_cursor = dest.cursor()
+        for row in rows:
+            dest_cursor.execute("""
+                MERGE dbo.entrega AS t
+                USING (VALUES (?, ?, ?, ?, ?, ?)) AS s (id_pedido, id_transportadora, id_regiao, dt_prometida, dt_entrega, ds_status_entrega)
+                ON t.id_pedido = s.id_pedido
+                WHEN MATCHED THEN UPDATE SET t.id_transportadora = s.id_transportadora, t.dt_prometida = s.dt_prometida, t.dt_entrega = s.dt_entrega, t.ds_status_entrega = s.ds_status_entrega
+                WHEN NOT MATCHED THEN INSERT (id_pedido, id_transportadora, id_regiao, dt_prometida, dt_entrega, ds_status_entrega) VALUES (s.id_pedido, s.id_transportadora, s.id_regiao, s.dt_prometida, s.dt_entrega, s.ds_status_entrega);
+            """, row.id_pedido, row.id_transportadora, row.id_regiao, row.dt_prometida, row.dt_entrega, row.ds_status_entrega)
+        dest.commit()
+        logging.info("entrega: carga concluída")
 
     except Exception as e:
-        logging.error(f"Erro ao ler erp.entrega: {str(e)}")
+        logging.error(f"Erro em entrega: {e}")
         raise
+    finally:
+        src.close()
+        dest.close()

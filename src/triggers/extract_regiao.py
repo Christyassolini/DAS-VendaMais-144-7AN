@@ -1,49 +1,49 @@
-import os
-
 import azure.functions as func
 import logging
-#from orchestrators.etl_orchestrator import ETLOrchestrator
+import os
+import pyodbc
 
 app = func.Blueprint()
 
 @app.timer_trigger(schedule="0 0 6 * * *", arg_name="timer", run_on_startup=False)
 def extract_regiao(timer: func.TimerRequest) -> None:
-    
-    sql_server = os.getenv("SQL_SERVER_SOURCE")
-    sql_database = os.getenv("SQL_DATABASE_SOURCE")
-    sql_user = os.getenv("SQL_USER_SOURCE")
-    sql_pass = os.getenv("SQL_PASSWORD_SOURCE")
 
-    logging.info(f"sql_server:{sql_server}, database:{sql_database}, user:{sql_user}, password:{sql_pass}...")
-
-    # Configura a string de conexão para o banco de dados SQL Server
-    conn_str = (
+    src = pyodbc.connect(
         "DRIVER={ODBC Driver 18 for SQL Server};"
-        f"SERVER={sql_server};"
-        f"DATABASE={sql_database};"
-        f"UID={sql_user};"
-        f"PWD={sql_pass};"
-        "Encrypt=yes;"
-        "TrustServerCertificate=no;"
-        "Connection Timeout=30;"
+        f"SERVER={os.getenv('SQL_SERVER_SOURCE')};"
+        f"DATABASE={os.getenv('SQL_DATABASE_SOURCE')};"
+        f"UID={os.getenv('SQL_USER_SOURCE')};"
+        f"PWD={os.getenv('SQL_PASSWORD_SOURCE')};"
+        "Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;"
+    )
+    dest = pyodbc.connect(
+        "DRIVER={ODBC Driver 18 for SQL Server};"
+        f"SERVER={os.getenv('SQL_SERVER_DEST')};"
+        f"DATABASE={os.getenv('SQL_DATABASE_DEST')};"
+        f"UID={os.getenv('SQL_USER_DEST')};"
+        f"PWD={os.getenv('SQL_PASSWORD_DEST')};"
+        "Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;"
     )
 
     try:
-        # Estabelece a conexão com o banco de dados usando pyodbc
-        with pyodbc.connect(conn_str) as conn:
-            # Cria um cursor para executar a consulta   
-            cursor = conn.cursor()
-            
-            query = "select top 5 * from erp.regiao"
- 
-            # Executa a consulta SQL
-            cursor.execute(query)
+        rows = src.cursor().execute("SELECT * FROM erp.regiao").fetchall()
+        logging.info(f"regiao: {len(rows)} registros lidos")
 
-            # Busca todos os resultados da consulta
-            rows = cursor.fetchall()
-
-            logging.info(rows)           
+        dest_cursor = dest.cursor()
+        for row in rows:
+            dest_cursor.execute("""
+                MERGE dbo.regiao AS t
+                USING (VALUES (?, ?, ?, ?)) AS s (cd_regiao, nm_regiao, sg_uf, nm_cidade)
+                ON t.cd_regiao = s.cd_regiao
+                WHEN MATCHED THEN UPDATE SET t.nm_regiao = s.nm_regiao, t.sg_uf = s.sg_uf, t.nm_cidade = s.nm_cidade
+                WHEN NOT MATCHED THEN INSERT (cd_regiao, nm_regiao, sg_uf, nm_cidade) VALUES (s.cd_regiao, s.nm_regiao, s.sg_uf, s.nm_cidade);
+            """, row.cd_regiao, row.nm_regiao, row.sg_uf, row.nm_cidade)
+        dest.commit()
+        logging.info("regiao: carga concluída")
 
     except Exception as e:
-        logging.error(f"Erro ao ler erp.regiao: {str(e)}")
+        logging.error(f"Erro em regiao: {e}")
         raise
+    finally:
+        src.close()
+        dest.close()
