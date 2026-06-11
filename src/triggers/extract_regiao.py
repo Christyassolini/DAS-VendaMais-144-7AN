@@ -10,18 +10,14 @@ def extract_regiao(timer: func.TimerRequest) -> None:
 
     src = pyodbc.connect(
         "DRIVER={ODBC Driver 18 for SQL Server};"
-        f"SERVER={os.getenv('SQL_SERVER_SOURCE')};"
-        f"DATABASE={os.getenv('SQL_DATABASE_SOURCE')};"
-        f"UID={os.getenv('SQL_USER_SOURCE')};"
-        f"PWD={os.getenv('SQL_PASSWORD_SOURCE')};"
+        f"SERVER={os.getenv('SQL_SERVER_SOURCE')};DATABASE={os.getenv('SQL_DATABASE_SOURCE')};"
+        f"UID={os.getenv('SQL_USER_SOURCE')};PWD={os.getenv('SQL_PASSWORD_SOURCE')};"
         "Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;"
     )
     dest = pyodbc.connect(
         "DRIVER={ODBC Driver 18 for SQL Server};"
-        f"SERVER={os.getenv('SQL_SERVER_DEST')};"
-        f"DATABASE={os.getenv('SQL_DATABASE_DEST')};"
-        f"UID={os.getenv('SQL_USER_DEST')};"
-        f"PWD={os.getenv('SQL_PASSWORD_DEST')};"
+        f"SERVER={os.getenv('SQL_SERVER_DEST')};DATABASE={os.getenv('SQL_DATABASE_DEST')};"
+        f"UID={os.getenv('SQL_USER_DEST')};PWD={os.getenv('SQL_PASSWORD_DEST')};"
         "Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;"
     )
 
@@ -33,11 +29,15 @@ def extract_regiao(timer: func.TimerRequest) -> None:
         for row in rows:
             dest_cursor.execute("""
                 MERGE dbo.regiao AS t
-                USING (VALUES (?, ?, ?, ?)) AS s (cd_regiao, nm_regiao, sg_uf, nm_cidade)
+                USING (VALUES (?, ?, ?, ?, ?, ?, ?, ?)) AS s (cd_regiao, nm_regiao, sg_uf, nm_cidade, fl_ativo, dt_atualizacao, nm_sistema_origem, cd_registro_origem)
                 ON t.cd_regiao = s.cd_regiao
-                WHEN MATCHED THEN UPDATE SET t.nm_regiao = s.nm_regiao, t.sg_uf = s.sg_uf, t.nm_cidade = s.nm_cidade
-                WHEN NOT MATCHED THEN INSERT (cd_regiao, nm_regiao, sg_uf, nm_cidade) VALUES (s.cd_regiao, s.nm_regiao, s.sg_uf, s.nm_cidade);
-            """, row.cd_regiao, row.nm_regiao, row.sg_uf, row.nm_cidade)
+                WHEN MATCHED THEN UPDATE SET
+                    t.nm_regiao = s.nm_regiao, t.sg_uf = s.sg_uf, t.nm_cidade = s.nm_cidade,
+                    t.fl_ativo = s.fl_ativo, t.dt_atualizacao = s.dt_atualizacao,
+                    t.nm_sistema_origem = s.nm_sistema_origem, t.cd_registro_origem = s.cd_registro_origem
+                WHEN NOT MATCHED THEN INSERT (cd_regiao, nm_regiao, sg_uf, nm_cidade, fl_ativo, dt_atualizacao, nm_sistema_origem, cd_registro_origem)
+                VALUES (s.cd_regiao, s.nm_regiao, s.sg_uf, s.nm_cidade, s.fl_ativo, s.dt_atualizacao, s.nm_sistema_origem, s.cd_registro_origem);
+            """, row.cd_regiao, row.nm_regiao, row.sg_uf, row.nm_cidade, row.fl_ativo, row.dt_atualizacao, row.nm_sistema_origem, row.cd_registro_origem)
         dest.commit()
         logging.info("regiao: carga concluída")
 
